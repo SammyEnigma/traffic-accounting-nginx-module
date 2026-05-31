@@ -25,9 +25,6 @@ jobs:
           outputs: type=local,dest=modules
           target: modules
 
-      - name: Create combined module
-        run: cp modules/ngx_http_accounting_module.so modules/ngx_http_accounting_module-with-stream.so
-
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
