@@ -4,29 +4,51 @@ on:
   push:
     branches: [master]
   create:
+  schedule:
+    - cron: '0 6 * * *'
 
 jobs:
-  dispatch:
-    if: github.event_name == 'push' || (github.event_name == 'create' && github.event.ref_type == 'tag')
+  detect:
     runs-on: ubuntu-latest
+    outputs:
+      should_dispatch: ${{ steps.main.outputs.should_dispatch }}
+      version: ${{ steps.main.outputs.version }}
+      commit: ${{ steps.main.outputs.commit }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Determine version
-        id: version
+      - name: Fetch builder branch config
         run: |
-          TAG=$(git describe --tags --exact-match HEAD 2>/dev/null || echo "")
-          if [ -n "$TAG" ]; then
-            echo "version=$TAG" >> $GITHUB_OUTPUT
-          else
-            echo "version=v$(date +%Y%m%d)-snapshot" >> $GITHUB_OUTPUT
-          fi
-          echo "commit=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+          git fetch origin dockerize/master 2>/dev/null || true
+          git show origin/dockerize/master:build-config.yml > /tmp/build-config.yml 2>/dev/null || true
 
-      - name: Dispatch to builder
-        uses: peter-evans/repository-dispatch@v3
+      - name: Detect
+        id: main
+        run: |
+          CURRENT_COMMIT=$(git rev-parse HEAD)
+          TAG=$(git describe --tags --exact-match HEAD 2>/dev/null || echo "")
+
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            LAST_COMMIT=$(yq -r '.last_build.commit // ""' /tmp/build-config.yml 2>/dev/null || echo "")
+            LAST_TAG=$(yq -r '.last_build.version // ""' /tmp/build-config.yml 2>/dev/null || echo "")
+            if [ "$CURRENT_COMMIT" = "$LAST_COMMIT" ] && [ "$TAG" = "$LAST_TAG" ]; then
+              echo "should_dispatch=false" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+          fi
+
+          echo "should_dispatch=true" >> $GITHUB_OUTPUT
+          echo "version=${TAG:-v$(date +%Y%m%d)-snapshot}" >> $GITHUB_OUTPUT
+          echo "commit=$CURRENT_COMMIT" >> $GITHUB_OUTPUT
+
+  dispatch:
+    needs: detect
+    if: needs.detect.outputs.should_dispatch == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.BUILDER_PAT }}
           repository: Lax/traffic-accounting-nginx-module
@@ -34,6 +56,6 @@ jobs:
           client-payload: |
             {
               "module": "traffic-accounting-nginx-module",
-              "version": "${{ steps.version.outputs.version }}",
-              "commit": "${{ steps.version.outputs.commit }}"
+              "version": "${{ needs.detect.outputs.version }}",
+              "commit": "${{ needs.detect.outputs.commit }}"
             }
