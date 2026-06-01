@@ -48,28 +48,14 @@ jobs:
     if: needs.detect.outputs.should_dispatch == 'true'
     runs-on: ubuntu-latest
     steps:
-      - name: Ensure latest gh CLI
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install --only-upgrade -y gh -qq
-          gh --version
-
-      - name: Trigger build-release on dockerize/master
-        env:
-          GH_TOKEN: ${{ secrets.BUILDER_PAT }}
-        run: |
-          set -x
-          echo "token length: ${#GH_TOKEN}"
-          if [ -z "$GH_TOKEN" ]; then
-            echo "ERROR: BUILDER_PAT secret is not set"
-            exit 1
-          fi
-          gh workflow run build-release.yml \
-            --ref dockerize/master \
-            --repo Lax/traffic-accounting-nginx-module \
-            --field module=traffic-accounting-nginx-module \
-            --field version="${{ needs.detect.outputs.version }}" \
-            --field commit="${{ needs.detect.outputs.commit }}"
-          rc=$?
-          echo "gh exit code: $rc"
-          exit $rc
+      - uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.BUILDER_PAT }}
+          repository: Lax/traffic-accounting-nginx-module
+          event-type: module-updated
+          client-payload: |
+            {
+              "module": "traffic-accounting-nginx-module",
+              "version": "${{ needs.detect.outputs.version }}",
+              "commit": "${{ needs.detect.outputs.commit }}"
+            }
