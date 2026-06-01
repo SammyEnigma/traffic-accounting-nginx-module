@@ -1,0 +1,39 @@
+name: Notify Builder
+
+on:
+  push:
+    branches: [master]
+  create:
+
+jobs:
+  dispatch:
+    if: github.event_name == 'push' || (github.event_name == 'create' && github.event.ref_type == 'tag')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine version
+        id: version
+        run: |
+          TAG=$(git describe --tags --exact-match HEAD 2>/dev/null || echo "")
+          if [ -n "$TAG" ]; then
+            echo "version=$TAG" >> $GITHUB_OUTPUT
+          else
+            echo "version=v$(date +%Y%m%d)-snapshot" >> $GITHUB_OUTPUT
+          fi
+          echo "commit=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Dispatch to builder
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.BUILDER_PAT }}
+          repository: Lax/nginx-module-builder
+          event-type: module-updated
+          client-payload: |
+            {
+              "module": "traffic-accounting-nginx-module",
+              "version": "${{ steps.version.outputs.version }}",
+              "commit": "${{ steps.version.outputs.commit }}"
+            }
