@@ -10,9 +10,9 @@ variants:
   - name: stream-only
     configure_flags: --without-http --with-stream
 last_build:
-  version: traffic-accounting-nginx-module-traffic-accounting-nginx-module-traffic-accounting-nginx-module-traffic-accounting-nginx-module-v20260601-snapshot
-  commit: 415a448a5f5c6b372dce83e1829502198961b254
-  date: "2026-06-01T23:16:59Z"
+  version: traffic-accounting-nginx-module-traffic-accounting-nginx-module-traffic-accounting-nginx-module-traffic-accounting-nginx-module-traffic-accounting-nginx-module-v20260601-snapshot
+  commit: 5bc6b139322882e06a34d6be6bb1377609d95b53
+  date: "2026-06-01T23:17:52Z"
   nginx_versions:
     stable: 1.30.2
     mainline: 1.31.1
