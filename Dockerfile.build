@@ -12,7 +12,7 @@ RUN curl -sL http://nginx.org/download/nginx-${NGX_VER}.tar.gz | tar xz
 WORKDIR /src/nginx-${NGX_VER}
 COPY . traffic-accounting-nginx-module
 
-FROM base AS both
+FROM base AS combined
 ARG NGX_VER
 RUN ./configure --prefix=/opt/nginx \
     --with-stream --with-compat \
@@ -35,6 +35,6 @@ RUN ./configure --prefix=/opt/nginx \
 
 FROM scratch AS modules
 ARG NGX_VER
-COPY --from=both /src/nginx-${NGX_VER}/objs/ngx_http_accounting_module.so /ngx_http_accounting_module-with-stream.so
-COPY --from=http-only /src/nginx-${NGX_VER}/objs/ngx_http_accounting_module.so /ngx_http_accounting_module.so
-COPY --from=stream-only /src/nginx-${NGX_VER}/objs/ngx_stream_accounting_module.so /ngx_stream_accounting_module.so
+COPY --from=combined /src/nginx-${NGX_VER}/objs/ngx_http_accounting_module.so /ngx_http_accounting_module-combined.so
+COPY --from=http-only /src/nginx-${NGX_VER}/objs/ngx_http_accounting_module.so /ngx_http_accounting_module-http-only.so
+COPY --from=stream-only /src/nginx-${NGX_VER}/objs/ngx_stream_accounting_module.so /ngx_stream_accounting_module-stream-only.so
