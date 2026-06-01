@@ -10,9 +10,9 @@ variants:
   - name: stream-only
     configure_flags: --without-http --with-stream
 last_build:
-  version: v20260601-snapshot
-  commit: daf570a4a00c7cdffe043973ca0056acf89067e0
-  date: "2026-06-01T23:13:14Z"
+  version: traffic-accounting-nginx-module-v20260601-snapshot
+  commit: 8e5ebdec466d029bbc096eb388a57b0343f38544
+  date: "2026-06-01T23:14:21Z"
   nginx_versions:
     stable: 1.30.2
     mainline: 1.31.1
