@@ -48,14 +48,13 @@ jobs:
     if: needs.detect.outputs.should_dispatch == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: peter-evans/repository-dispatch@v3
-        with:
-          token: ${{ secrets.BUILDER_PAT }}
-          repository: Lax/traffic-accounting-nginx-module
-          event-type: module-updated
-          client-payload: |
-            {
-              "module": "traffic-accounting-nginx-module",
-              "version": "${{ needs.detect.outputs.version }}",
-              "commit": "${{ needs.detect.outputs.commit }}"
-            }
+      - name: Trigger build-release on dockerize/master
+        env:
+          GH_TOKEN: ${{ secrets.BUILDER_PAT }}
+        run: |
+          gh workflow run build-release.yml \
+            --ref dockerize/master \
+            --repo Lax/traffic-accounting-nginx-module \
+            --field module=traffic-accounting-nginx-module \
+            --field version="${{ needs.detect.outputs.version }}" \
+            --field commit="${{ needs.detect.outputs.commit }}"
